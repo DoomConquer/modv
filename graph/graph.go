@@ -1,4 +1,4 @@
-package main
+package graph
 
 import (
 	"bufio"
@@ -28,8 +28,9 @@ node [shape=box];
 type ModuleGraph struct {
 	Reader io.Reader
 
-	Mods         map[string]int
-	Dependencies map[int][]int
+	Mods         map[string]int // 依赖包名 -> modId
+	Dependencies map[int][]int  // modId -> 被依赖modId
+	ModIdsMap    map[int]string // modId -> 依赖包名
 }
 
 func NewModuleGraph(r io.Reader) *ModuleGraph {
@@ -38,6 +39,7 @@ func NewModuleGraph(r io.Reader) *ModuleGraph {
 
 		Mods:         make(map[string]int),
 		Dependencies: make(map[int][]int),
+		ModIdsMap:    make(map[int]string),
 	}
 }
 
@@ -64,6 +66,7 @@ func (m *ModuleGraph) Parse() error {
 		if !ok {
 			modId = serialID
 			m.Mods[mod] = modId
+			m.ModIdsMap[modId] = mod
 			serialID += 1
 		}
 
@@ -71,6 +74,7 @@ func (m *ModuleGraph) Parse() error {
 		if !ok {
 			depModId = serialID
 			m.Mods[depMod] = depModId
+			m.ModIdsMap[depModId] = depMod
 			serialID += 1
 		}
 
@@ -78,10 +82,46 @@ func (m *ModuleGraph) Parse() error {
 	}
 }
 
-func (m *ModuleGraph) Render(w io.Writer) error {
-	templ, err := template.New("graph").Parse(graphTemplate)
+func (m *ModuleGraph) Render(w io.Writer, args string) error {
+	template, err := template.New("graph").Parse(graphTemplate)
 	if err != nil {
-		return fmt.Errorf("templ.Parse: %v", err)
+		return fmt.Errorf("template.Parse: %+v", err)
+	}
+
+	// 只保留args包的依赖关系
+	args = strings.TrimSpace(args)
+	if args != "" {
+		pkg := strings.Replace(args, "@", "\n", 1)
+		if _, ok := m.Mods[pkg]; ok {
+			filterModuleGraph := NewModuleGraph(m.Reader)
+			modId := m.Mods[pkg]
+			visited := map[int]int{}
+			modIds := make([]int, 0)
+			modIds = append(modIds, modId)
+			visited[modId] = modId
+			for len(modIds) > 0 {
+				tmpModIds := make([]int, 0)
+				for _, mId := range modIds {
+					dependenciesIds := m.Dependencies[mId]
+					for _, dId := range dependenciesIds {
+						if _, has := visited[dId]; !has { // 防止循环依赖
+							visited[dId] = dId
+							tmpModIds = append(tmpModIds, dId)
+						}
+					}
+				}
+				modIds = tmpModIds
+			}
+			for _, visit := range visited {
+				filterModuleGraph.Mods[m.ModIdsMap[visit]] = visit
+				filterModuleGraph.Dependencies[visit] = m.Dependencies[visit]
+			}
+			if len(visited) > 0 {
+				m = filterModuleGraph
+			}
+		} else {
+			return fmt.Errorf("package %+v not existed", args)
+		}
 	}
 
 	var direction string
@@ -89,12 +129,12 @@ func (m *ModuleGraph) Render(w io.Writer) error {
 		direction = "horizontal"
 	}
 
-	if err := templ.Execute(w, map[string]interface{}{
+	if err := template.Execute(w, map[string]interface{}{
 		"mods":         m.Mods,
 		"dependencies": m.Dependencies,
 		"direction":    direction,
 	}); err != nil {
-		return fmt.Errorf("templ.Execute: %v", err)
+		return fmt.Errorf("template.Execute: %+v", err)
 	}
 
 	return nil

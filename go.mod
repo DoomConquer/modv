@@ -1,3 +1,3 @@
-module github.com/poloxue/modv
+module github.com/DoomConquer/modv
 
-go 1.12
+go 1.13.5

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/DoomConquer/modv/graph"
 	"os"
 	"runtime"
 )
@@ -27,6 +28,10 @@ func main() {
 		PrintUsage()
 		os.Exit(1)
 	}
+	var args string
+	if len(os.Args) > 1 {
+		args = os.Args[1]
+	}
 
 	if info.Mode()&os.ModeNamedPipe == 0 {
 		fmt.Println("command err: command is intended to work with pipes.")
@@ -34,15 +39,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	mg := NewModuleGraph(os.Stdin)
+	mg := graph.NewModuleGraph(os.Stdin)
 	if err := mg.Parse(); err != nil {
-		fmt.Println("mg.Parse: ", err)
+		fmt.Println("mg.Parse error: ", err)
 		PrintUsage()
 		os.Exit(1)
 	}
 
-	if err := mg.Render(os.Stdout); err != nil {
-		fmt.Println("mg.Render: ", err)
+	if err := mg.Render(os.Stdout, args); err != nil {
+		fmt.Println("mg.Render error: ", err)
 		PrintUsage()
 		os.Exit(1)
 	}

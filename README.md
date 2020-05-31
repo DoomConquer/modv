@@ -1,4 +1,5 @@
-This is a module dependency visualizer for go mod.
+This is a module dependency visualizer for go mod. It is forked from https://github.com/poloxue/modv, and added
+some module or package filter function.
 
 # Usage
 
@@ -20,8 +21,10 @@ $ sudo pacman -S --needed graphviz
 Install `modv` and use it.
 
 ```
-$ go install github.com/poloxue/modv
+$ go install github.com/DoomConquer/modv
 $ go mod graph | modv | dot -T svg -o /tmp/modv.svg && xdg-open /tmp/modv.svg
+or
+$ go mod graph | modv moduleName@version | dot -T svg -o /tmp/modv.svg && xdg-open /tmp/modv.svg
 ```
 
 
@@ -29,7 +32,7 @@ $ go mod graph | modv | dot -T svg -o /tmp/modv.svg && xdg-open /tmp/modv.svg
 
 ```bash
 $ brew install graphviz
-$ go get github.com/poloxue/modv
+$ go get github.com/DoomConquer/modv
 ```
 
 Try the following.
@@ -60,7 +63,7 @@ $ pacman -S mingw-w64-x86_64-graphviz
 Try it.
 
 ```bash
-$ go get github.com/poloxue/modv
+$ go get github.com/DoomConquer/modv
 $ go mod graph | modv | dot -T svg -o graph.svg; start graph.svg
 ```
 
@@ -69,7 +72,7 @@ $ go mod graph | modv | dot -T svg -o graph.svg; start graph.svg
 If MacOS, tye the following:
 
 ```bash
-$ git clone https://github.com/poloxue/testmod
+$ git clone https://github.com/DoomConquer/testmod
 $ cd testmod
 $ go mod graph | modv | dot -T png | open -f -a /System/Applications/Preview.app
 ```
